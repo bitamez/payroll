@@ -42,9 +42,6 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-
 # IDE files
 .vscode/
 .idea/
@@ -69,3 +66,13 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Kiro spec files (development artifacts)
+.kiro/
+
+# Development tools
+database-explorer.js
+database-viewer.html
+test-api.js
+DATABASE-GUIDE.md
+DEPLOYMENT.md
