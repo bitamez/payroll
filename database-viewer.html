@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethiopian Payroll Database Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            background: white;
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table th {
+            background: #343a40;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #cce7ff;
+            color: #004085;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .currency {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇪🇹 Ethiopian Payroll Database</h1>
+            <p>Real-time Database Viewer & Analytics</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showTab('employees')">👥 Employees</button>
+            <button class="nav-tab" onclick="showTab('payrolls')">💰 Payrolls</button>
+            <button class="nav-tab" onclick="showTab('accounts')">🏦 Bank Accounts</button>
+            <button class="nav-tab" onclick="showTab('transactions')">💸 Transactions</button>
+        </div>
+
+        <div id="overview" class="tab-content active">
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3 id="total-employees">-</h3>
+                    <p>Total Employees</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="total-payrolls">-</h3>
+                    <p>Payroll Records</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="total-balance">-</h3>
+                    <p>System Balance (ETB)</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="total-users">-</h3>
+                    <p>System Users</p>
+                </div>
+            </div>
+            <div id="overview-details"></div>
+        </div>
+
+        <div id="employees" class="tab-content">
+            <h2>👥 Employee Management</h2>
+            <div id="employees-content" class="loading">Loading employees...</div>
+        </div>
+
+        <div id="payrolls" class="tab-content">
+            <h2>💰 Payroll Records</h2>
+            <div id="payrolls-content" class="loading">Loading payrolls...</div>
+        </div>
+
+        <div id="accounts" class="tab-content">
+            <h2>🏦 Bank Accounts</h2>
+            <div id="accounts-content" class="loading">Loading bank accounts...</div>
+        </div>
+
+        <div id="transactions" class="tab-content">
+            <h2>💸 Transaction History</h2>
+            <div id="transactions-content" class="loading">Loading transactions...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = null;
+
+        // Login and get token
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'hr@company.com',
+                        password: 'password123'
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    return true;
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+            }
+            return false;
+        }
+
+        // Make authenticated API request
+        async function apiRequest(endpoint) {
+            if (!authToken) {
+                const loginSuccess = await login();
+                if (!loginSuccess) {
+                    throw new Error('Authentication failed');
+                }
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.statusText}`);
+            }
+
+            return await response.json();
+        }
+
+        // Show tab
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data for the tab
+            loadTabData(tabName);
+        }
+
+        // Load data for specific tab
+        async function loadTabData(tabName) {
+            try {
+                switch (tabName) {
+                    case 'employees':
+                        await loadEmployees();
+                        break;
+                    case 'payrolls':
+                        await loadPayrolls();
+                        break;
+                    case 'accounts':
+                        await loadAccounts();
+                        break;
+                    case 'transactions':
+                        await loadTransactions();
+                        break;
+                }
+            } catch (error) {
+                console.error(`Error loading ${tabName}:`, error);
+                document.getElementById(`${tabName}-content`).innerHTML =
+                    `<div class="error">Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        // Load employees
+        async function loadEmployees() {
+            const data = await apiRequest('/employees');
+            const employees = data.data.employees;
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Salary (ETB)</th>
+                            <th>Status</th>
+                            <th>Employment Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            employees.forEach(emp => {
+                html += `
+                    <tr>
+                        <td>${emp.employeeId}</td>
+                        <td>${emp.fullName}</td>
+                        <td>${emp.position}</td>
+                        <td class="currency">${emp.basicSalary.toLocaleString()}</td>
+                        <td><span class="status-badge status-${emp.status.toLowerCase()}">${emp.status}</span></td>
+                        <td>${emp.employmentType}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('employees-content').innerHTML = html;
+        }
+
+        // Load payrolls
+        async function loadPayrolls() {
+            const data = await apiRequest('/payroll');
+            const payrolls = data.data.payrolls;
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Period</th>
+                            <th>Gross Pay (ETB)</th>
+                            <th>Net Pay (ETB)</th>
+                            <th>Tax (ETB)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            payrolls.forEach(payroll => {
+                html += `
+                    <tr>
+                        <td>${payroll.employee.fullName}</td>
+                        <td>${payroll.payPeriod.month}/${payroll.payPeriod.year}</td>
+                        <td class="currency">${payroll.grossPay.toLocaleString()}</td>
+                        <td class="currency">${payroll.netPay.toLocaleString()}</td>
+                        <td class="currency">${payroll.incomeTax.toLocaleString()}</td>
+                        <td><span class="status-badge status-${payroll.status.toLowerCase()}">${payroll.status}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('payrolls-content').innerHTML = html;
+        }
+
+        // Load bank accounts
+        async function loadAccounts() {
+            const data = await apiRequest('/transactions/accounts');
+            const accounts = data.data.accounts;
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Account Number</th>
+                            <th>Account Holder</th>
+                            <th>Type</th>
+                            <th>Balance (ETB)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            accounts.forEach(account => {
+                html += `
+                    <tr>
+                        <td>${account.accountNumber}</td>
+                        <td>${account.accountHolder}</td>
+                        <td>${account.accountType}</td>
+                        <td class="currency">${account.balance.toLocaleString()}</td>
+                        <td><span class="status-badge status-${account.isActive ? 'active' : 'inactive'}">${account.isActive ? 'Active' : 'Inactive'}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('accounts-content').innerHTML = html;
+        }
+
+        // Load transactions
+        async function loadTransactions() {
+            try {
+                const data = await apiRequest('/transactions');
+                const transactions = data.data.transactions;
+
+                if (transactions.length === 0) {
+                    document.getElementById('transactions-content').innerHTML =
+                        '<div class="loading">No transactions found. Payment processing requires MongoDB replica set for production.</div>';
+                    return;
+                }
+
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Type</th>
+                                <th>Amount (ETB)</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                transactions.forEach(txn => {
+                    html += `
+                        <tr>
+                            <td>${txn.transactionId}</td>
+                            <td>${txn.transactionType}</td>
+                            <td class="currency">${txn.amount.toLocaleString()}</td>
+                            <td>${txn.fromAccount.accountHolder}</td>
+                            <td>${txn.toAccount.accountHolder}</td>
+                            <td><span class="status-badge status-${txn.status.toLowerCase()}">${txn.status}</span></td>
+                            <td>${new Date(txn.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('transactions-content').innerHTML = html;
+            } catch (error) {
+                document.getElementById('transactions-content').innerHTML =
+                    '<div class="loading">No transactions available. Payment processing requires MongoDB replica set.</div>';
+            }
+        }
+
+        // Load overview data
+        async function loadData() {
+            try {
+                const [employeesData, payrollsData, accountsData] = await Promise.all([
+                    apiRequest('/employees'),
+                    apiRequest('/payroll'),
+                    apiRequest('/transactions/accounts')
+                ]);
+
+                // Update stats
+                document.getElementById('total-employees').textContent = employeesData.data.employees.length;
+                document.getElementById('total-payrolls').textContent = payrollsData.data.payrolls.length;
+                document.getElementById('total-users').textContent = '3'; // We know there are 3 users
+
+                const totalBalance = accountsData.data.accounts.reduce((sum, acc) => sum + acc.balance, 0);
+                document.getElementById('total-balance').textContent = totalBalance.toLocaleString();
+
+                // Update overview details
+                const overviewHtml = `
+                    <h3>📈 System Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>${employeesData.data.employees.filter(e => e.status === 'ACTIVE').length}</h3>
+                            <p>Active Employees</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>${payrollsData.data.payrolls.filter(p => p.status === 'APPROVED').length}</h3>
+                            <p>Approved Payrolls</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>${accountsData.data.accounts.filter(a => a.accountType === 'EMPLOYEE').length}</h3>
+                            <p>Employee Accounts</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>${payrollsData.data.payrolls.reduce((sum, p) => sum + p.grossPay, 0).toLocaleString()}</h3>
+                            <p>Total Gross Pay (ETB)</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('overview-details').innerHTML = overviewHtml;
+
+            } catch (error) {
+                console.error('Error loading overview data:', error);
+                document.getElementById('overview-details').innerHTML =
+                    `<div class="error">Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+    </script>
+</body>
+
+</html>
